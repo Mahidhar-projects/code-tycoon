@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Code Tycoon – Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: monospace; }
+    .product, .worker, .achievement { border: 1px solid #444; padding: 10px; border-radius: 8px; margin-bottom: 10px; background: #1f2937; }
+    .unlocked { background-color: #16a34a !important; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-4xl font-bold text-center mb-6">💻 Code Tycoon</h1>
+
+    <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+      <div><strong>💰 Coins:</strong> <span id="coins">0</span></div>
+      <div><strong>⚡ Energy:</strong> <span id="energy">10</span></div>
+      <div><strong>🧠 Code Power:</strong> <span id="power">1</span></div>
+      <div><strong>🕒 Passive Income/s:</strong> <span id="income">0</span></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <button onclick="code()" class="bg-green-600 hover:bg-green-700 py-2 rounded">🖥️ Code</button>
+      <button onclick="upgrade()" class="bg-blue-600 hover:bg-blue-700 py-2 rounded">⚙️ Upgrade Brain (Cost: <span id='upgradeCost'>10</span>)</button>
+      <button onclick="rest()" class="bg-yellow-400 text-black hover:bg-yellow-300 py-2 rounded">🛌 Rest</button>
+    </div>
+
+    <h2 class="text-2xl mt-6 mb-2">🚀 Products</h2>
+    <div id="products" class="mb-4"></div>
+
+    <h2 class="text-2xl mt-6 mb-2">🤖 AI Workers</h2>
+    <div id="workers" class="mb-4"></div>
+
+    <h2 class="text-2xl mt-6 mb-2">🏆 Achievements</h2>
+    <div id="achievements" class="mb-4"></div>
+
+    <div class="flex gap-4 mt-6">
+      <button onclick="saveGame()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">💾 Save</button>
+      <button onclick="loadGame()" class="bg-gray-700 hover:bg-gray-800 px-4 py-2 rounded">📂 Load</button>
+      <button onclick="resetGame()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">🗑️ Reset</button>
+    </div>
+
+    <p class="text-center mt-10 text-gray-400 text-sm">Created Game & Lex</p>
+  </div>
+
+  <script>
+    let coins = 0;
+    let energy = 10;
+    let power = 1;
+    let upgradeCost = 10;
+    let income = 0;
+    let achievements = [
+      { name: "First Code", unlocked: false, condition: () => coins >= 1 },
+      { name: "Code Master", unlocked: false, condition: () => power >= 5 },
+      { name: "Product Launch", unlocked: false, condition: () => products[0].count >= 1 },
+      { name: "AI Empire", unlocked: false, condition: () => workers[0].count >= 1 },
+      { name: "Millionaire", unlocked: false, condition: () => coins >= 1000000 }
+    ];
+    let products = [
+      { name: "Website", cost: 100, income: 1, count: 0 },
+      { name: "Mobile App", cost: 250, income: 5, count: 0 },
+      { name: "AI Tool", cost: 1000, income: 20, count: 0 }
+    ];
+    let workers = [
+      { name: "GPT Worker", cost: 500, rate: 1, count: 0 },
+      { name: "AGI Bot", cost: 2000, rate: 5, count: 0 }
+    ];
+
+    function updateUI() {
+      document.getElementById("coins").innerText = coins;
+      document.getElementById("energy").innerText = energy;
+      document.getElementById("power").innerText = power;
+      document.getElementById("upgradeCost").innerText = upgradeCost;
+      document.getElementById("income").innerText = income;
+
+      const prodDiv = document.getElementById("products");
+      prodDiv.innerHTML = "";
+      products.forEach((p, i) => {
+        prodDiv.innerHTML += `<div class="product">
+          <strong>${p.name}</strong><br>
+          Count: ${p.count}<br>
+          Income: +${p.income}/s<br>
+          <button onclick="buyProduct(${i})" class="mt-1 bg-blue-500 px-2 py-1 rounded">Buy (${p.cost} coins)</button>
+        </div>`;
+      });
+
+      const workDiv = document.getElementById("workers");
+      workDiv.innerHTML = "";
+      workers.forEach((w, i) => {
+        workDiv.innerHTML += `<div class="worker">
+          <strong>${w.name}</strong><br>
+          Count: ${w.count}<br>
+          Auto-code: +${w.rate} coins/sec<br>
+          <button onclick="hireWorker(${i})" class="mt-1 bg-green-500 px-2 py-1 rounded">Hire (${w.cost} coins)</button>
+        </div>`;
+      });
+
+      const achieveDiv = document.getElementById("achievements");
+      achieveDiv.innerHTML = "";
+      achievements.forEach(a => {
+        const unlocked = a.condition();
+        a.unlocked = unlocked;
+        achieveDiv.innerHTML += `<div class="achievement ${unlocked ? 'unlocked' : ''}">
+          <strong>${a.name}</strong> ${unlocked ? '✅' : ''}
+        </div>`;
+      });
+    }
+
+    function code() {
+      if (energy > 0) {
+        coins += power;
+        energy -= 1;
+        updateUI();
+      } else {
+        alert("Too tired! Rest first.");
+      }
+    }
+
+    function upgrade() {
+      if (coins >= upgradeCost) {
+        coins -= upgradeCost;
+        power += 1;
+        upgradeCost += 10;
+        updateUI();
+      } else {
+        alert("Not enough coins.");
+      }
+    }
+
+    function rest() {
+      energy = 10;
+      updateUI();
+    }
+
+    function buyProduct(i) {
+      const p = products[i];
+      if (coins >= p.cost) {
+        coins -= p.cost;
+        p.count += 1;
+        income += p.income;
+        updateUI();
+      } else {
+        alert("Not enough coins.");
+      }
+    }
+
+    function hireWorker(i) {
+      const w = workers[i];
+      if (coins >= w.cost) {
+        coins -= w.cost;
+        w.count += 1;
+        updateUI();
+      } else {
+        alert("Not enough coins.");
+      }
+    }
+
+    function gameLoop() {
+      coins += income;
+      workers.forEach(w => {
+        coins += w.count * w.rate;
+      });
+      updateUI();
+    }
+
+    function saveGame() {
+      const saveData = {
+        coins, energy, power, upgradeCost, income, products, workers
+      };
+      localStorage.setItem("codeTycoonSave", JSON.stringify(saveData));
+      alert("Game Saved!");
+    }
+
+    function loadGame() {
+      const saveData = JSON.parse(localStorage.getItem("codeTycoonSave"));
+      if (saveData) {
+        ({ coins, energy, power, upgradeCost, income, products, workers } = saveData);
+        updateUI();
+        alert("Game Loaded!");
+      } else {
+        alert("No save found.");
+      }
+    }
+
+    function resetGame() {
+      if (confirm("Reset your game progress?")) {
+        coins = 0;
+        energy = 10;
+        power = 1;
+        upgradeCost = 10;
+        income = 0;
+        products.forEach(p => { p.count = 0; });
+        workers.forEach(w => { w.count = 0; });
+        updateUI();
+      }
+    }
+
+    updateUI();
+    setInterval(gameLoop, 1000);
+  </script>
+</body>
+</html>
